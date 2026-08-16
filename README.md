@@ -33,14 +33,13 @@ single generic/parameter (`CONFIG`).
 ## Getting the repository
 
 ```bash
-git clone https://github.com/<user>/<repo>.git
-cd <repo>
+git clone https://github.com/Anelay02/CIC-implementation-Verilog-VHDL-.git
 ```
 
 The Python model additionally needs `matplotlib`:
 
 ```bash
-pip install matplotlib
+pip install matplotlib math sys os
 ```
 
 ---
