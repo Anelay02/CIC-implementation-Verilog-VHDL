@@ -112,7 +112,7 @@ free.
 ### Where the rate change goes: decimator vs interpolator
 
 <!-- TODO: schematic still missing, will be added later -->
-![CIC schematic — decimator and interpolator](Img/schematic.pdf)
+![CIC schematic — decimator and interpolator](Img/schematic.png)
 
 Applying the **Noble identities** to move the resampler through the comb section:
 
@@ -400,7 +400,7 @@ The script exits with status `0` on a bit-exact match and `1` otherwise (and pri
 first few mismatching rows with the offending column names), so it can be dropped into CI
 as-is. It also saves an overlay of the two output streams to `Img/cic_compare.pdf`:
 
-![Python model vs HDL simulation](Img/cic_compare.pdf)
+![Python model vs HDL simulation](Img/cic_compare.png)
 
 The plot is deliberately saved with a transparent background and opaque, high-contrast
 traces so that it stays readable in both light and dark viewing modes.
