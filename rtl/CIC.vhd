@@ -16,7 +16,7 @@ use ieee.numeric_std.all;
 
 entity CIC is
     generic (
-        N           : integer := 3;              -- Order of the filter
+        N           : integer := 3;               -- Order of the filter
         OSR         : integer := 512;             -- Oversampling ratio, only powers of 2
         INPUT_SIZE  : integer := 1;               -- Input size
         OUTPUT_SIZE : integer := 16;              -- Output size
