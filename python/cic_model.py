@@ -1,14 +1,5 @@
-#!/usr/bin/env python3
 # =============================================================================
-# cic_model.py - Bit-exact Python model of CIC.v + tb_CIC.v
-#
-# Reproduces, cycle by cycle, exactly what the Verilog testbench writes into
-# tb_CIC.csv : the sine stimulus AND the decimator / interpolator outputs.
-#
-# This script does NOT generate a CSV. It reads the reference CSV produced by
-# the Verilog simulation, runs the equivalent Python model in memory, compares
-# the two, and plots them together. All parameters are set manually below -
-# there are no command-line arguments.
+# cic_model.py - Bit-exact Python model
 # =============================================================================
 
 import math
@@ -19,8 +10,7 @@ matplotlib.use("Agg")               # no display needed
 import matplotlib.pyplot as plt
 
 # =============================================================================
-# 1. PARAMETERS - edit these directly (mirror of the `parameter` list at the
-#    top of tb_CIC.v). No command-line arguments are used.
+# 1. PARAMETERS - edit these directly
 # =============================================================================
 
 N             = 3          # order of the filters (number of stages)
@@ -70,7 +60,7 @@ MAX_INPUT_CODE = (2 ** INPUT_SIZE) - 1
 
 
 # =============================================================================
-# 2. THE DUT  (bit-exact model of CIC.v, as plain functions + a state dict)
+# 2. THE DUT
 # =============================================================================
 
 def cic_new(n, osr, input_size, output_size, config):
@@ -175,7 +165,7 @@ def cic_step(state, i_data, i_valid):
 
 
 # =============================================================================
-# 3. THE TESTBENCH  (bit-exact model of tb_CIC.v)
+# 3. THE TESTBENCH
 # =============================================================================
 
 def run_testbench():
@@ -253,7 +243,7 @@ def run_testbench():
 
 
 # =============================================================================
-# 4. CSV READING / COMPARISON  (no CSV is written by this script)
+# 4. CSV READING & COMPARISON
 # =============================================================================
 
 CSV_HEADER = "time_ns,dec_i_data,dec_o_valid,dec_o_data,int_i_data,interp_o_valid,interp_o_data"
@@ -297,28 +287,6 @@ def compare(ref_rows, py_rows, label=""):
 # =============================================================================
 # 5. PLOTTING
 # =============================================================================
-#
-# Color choices below are picked to stay readable on GitHub whether the
-# viewer is using light or dark mode, since the figure/axes background is
-# saved fully transparent:
-#   - text, titles, ticks, spines -> neutral mid-gray (#999999), which has
-#     decent contrast against both black and white.
-#   - grid lines -> a fainter version of the same gray via alpha, so it
-#     doesn't dominate on either background.
-#   - traces are drawn fully OPAQUE (no alpha blending on the lines
-#     themselves) - alpha-blended colors wash out on white backgrounds
-#     because the transparent PDF/PNG has no backing color to blend
-#     against, so anything semi-transparent looks faded there. Instead the
-#     two traces are told apart by color + linewidth + linestyle:
-#   - "HDL CSV" trace -> a solid, fairly dark/saturated orange (#d2691e,
-#     "chocolate"), thick solid line. Dark enough to hold up on white,
-#     saturated enough to still read on black.
-#   - "Python model" trace -> a solid, saturated blue (#1f77b4, matplotlib
-#     tab:blue), thin dashed line. Distinct hue from the orange (works for
-#     most color-blindness types too) and dark/saturated enough for both
-#     backgrounds.
-#   - legend -> no fill at all (transparent facecolor) with just a gray
-#     edge/text, so it never turns into a translucent gray blob on white.
 
 TEXT_COLOR = "#999999"   # titles, labels, ticks, spines
 GRID_COLOR = "#888888"   # gridlines (kept faint via alpha)
@@ -339,11 +307,7 @@ def _style_axes(ax):
 
 
 def plot(ref_rows, py_rows, filename=PLOT_PATH):
-    """Overlay the Python model and the HDL CSV outputs (decimator +
-    interpolator only - input stimulus panels are omitted). Error stats are
-    printed, not plotted. Saved fully transparent, with opaque line colors
-    chosen to be readable on both light and dark GitHub themes."""
-
+    """Overlay the Python model and the HDL CSV outputs."""
     def col(rows, i):
         return [r[i] for r in rows]
 
