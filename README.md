@@ -36,7 +36,7 @@ single generic/parameter (`CONFIG`).
 git clone https://github.com/Anelay02/CIC-implementation-Verilog-VHDL-.git
 ```
 
-The Python model additionally needs `matplotlib`:
+The Python model additionally needs :
 
 ```bash
 pip install matplotlib math sys os
