@@ -435,18 +435,5 @@ E. Hogenauer, *An economical class of digital filters for decimation and interpo
 IEEE Transactions on Acoustics, Speech, and Signal Processing, vol. 29, no. 2,
 pp. 155–162, 1981. [doi:10.1109/TASSP.1981.1163535](https://doi.org/10.1109/TASSP.1981.1163535)
 
-```bibtex
-@ARTICLE{1163535,
-  author={Hogenauer, E.},
-  journal={IEEE Transactions on Acoustics, Speech, and Signal Processing},
-  title={An economical class of digital filters for decimation and interpolation},
-  year={1981},
-  volume={29},
-  number={2},
-  pages={155-162},
-  keywords={Digital filters;Interpolation;Finite impulse response filter;Sampling methods;Band pass filters;Frequency response;Passband;Hardware;Signal sampling;Adders},
-  doi={10.1109/TASSP.1981.1163535}}
-```
-
 R. Lyons, *A Beginner's Guide To Cascaded Integrator-Comb (CIC) Filters*, dsprelated.com —
 <https://www.dsprelated.com/showarticle/1337.php>
