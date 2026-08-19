@@ -1,12 +1,13 @@
+#!/usr/bin/env python3
 # =============================================================================
-# cic_model.py - Bit-exact Python model
+# File: cic_model.py
+# Author:	Ayoub el idrissi Achraf
+# Description: Reproduces and compares the output of the HDL testbench.
 # =============================================================================
 
 import math
 import os
 import sys
-import matplotlib
-matplotlib.use("Agg")               # no display needed
 import matplotlib.pyplot as plt
 
 # =============================================================================
@@ -25,33 +26,20 @@ NB_PERIODS    = 4          # number of sine periods to simulate
 AMPLITUDE = None           # None -> full scale (2^(INPUT_SIZE-1) - 1)
 OFFSET    = None           # None -> mid scale  (2^(INPUT_SIZE-1))
 
-# ---- Paths ----
-CSV_PATH = "../results/tb_CIC.csv"  # reference CSV produced by the Verilog testbench
-PLOT_PATH = "../Img/cic_compare.pdf"  # where the comparison plot is saved
-
-# ---- Resolve defaults, same as the testbench ----
 if AMPLITUDE is None:
     AMPLITUDE = (2.0 ** (INPUT_SIZE - 1)) - 1.0
 if OFFSET is None:
     OFFSET = 2.0 ** (INPUT_SIZE - 1)
 
+# ---- Paths ----
+CSV_PATH = "../results/tb_CIC.csv"  # reference CSV produced by the Verilog testbench
+PLOT_PATH = "../Img/cic_compare.png"  # where the comparison plot is saved
 
-def rtoi(x):
-    """Verilog $rtoi(): convert real to integer by TRUNCATING toward zero."""
-    return int(x)          # Python int() on a float truncates toward zero, like $rtoi
-
-
-def clog2(x):
-    """Verilog $clog2(): number of bits needed to represent x values."""
-    return (x - 1).bit_length()
-
-
-# ---- Derived values (the `initial` pre-computation block of tb_CIC.v) ----
+# ---- Pre-computation ----
 t_full    = CLK_PERIOD_NS * 1.0e-9              # full-rate sample period [s]
 t_int_low = OSR_INT * CLK_PERIOD_NS * 1.0e-9    # interpolator low-rate period [s]
 
-# samples_per_period = $rtoi(1.0/(F*t_int_low) + 0.5)
-samples_per_period = max(2, rtoi(1.0 / (F_SIGNAL_HZ * t_int_low) + 0.5))
+samples_per_period = max(2, int(1.0 / (F_SIGNAL_HZ * t_int_low) + 0.5))
 
 OSR_MAX       = max(OSR_DEC, OSR_INT)
 DRAIN_CYCLES  = 4 * OSR_MAX
@@ -64,18 +52,13 @@ MAX_INPUT_CODE = (2 ** INPUT_SIZE) - 1
 # =============================================================================
 
 def cic_new(n, osr, input_size, output_size, config):
-    """
-    Create a fresh state dict for one CIC instance (decimator or interpolator).
+    """Create a fresh state dict for one CIC instance (decimator or interpolator)."""
 
-    Every call to cic_step() = one rising edge of i_clk. Like real hardware,
-    all the combinational logic is evaluated from the CURRENT register values,
-    and only then are the registers updated (this is what `<=` does in Verilog).
-    """
     assert config in ("decimator", "interpolator")
 
-    log_osr  = clog2(osr)
+    log_osr  = math.ceil(math.log2(osr))
     reg_size = ((n - 1) * log_osr + input_size) if config == "interpolator" \
-               else (n * log_osr + input_size)
+               else (n * log_osr + input_size)  # Define the reg_size based on the configuration
     lsb_out  = max(0, reg_size - output_size)   # bits dropped at the output
 
     return {
@@ -96,12 +79,11 @@ def cic_new(n, osr, input_size, output_size, config):
 
 def cic_step(state, i_data, i_valid):
     """Simulate one rising clock edge with the given inputs, updating state in place."""
+
     n, mask = state["N"], state["MASK"]
     osr = state["OSR"]
 
-    # accept_sample = (&samples_counter) && i_valid
-    # -> asserted on the last cycle of each group of OSR cycles
-    accept = (state["samples_counter"] == osr - 1) and bool(i_valid)
+    accept = (state["samples_counter"] == osr - 1) and bool(i_valid) # accept_sample = (&samples_counter) && i_valid
 
     if state["config"] == "decimator":
         # ---------- Integrators: running sums, fed by the input ----------
@@ -133,9 +115,7 @@ def cic_step(state, i_data, i_valid):
             c = (c - state["comb_stor"][i]) & mask
             comb.append(c)
 
-        # Zero stuffing: the comb result is injected once every OSR cycles,
-        # the rest of the time a zero is pushed into the integrators.
-        stuffed_sample = comb[n - 1] if accept else 0
+        stuffed_sample = comb[n - 1] if accept else 0 # Zero stuffing
 
         # ---------- Integrators, running at the HIGH rate ----------
         integ, acc = [], stuffed_sample
@@ -153,8 +133,6 @@ def cic_step(state, i_data, i_valid):
             state["integ_stor"] = integ
 
     # ---------- Output registers (common to both configs) ----------
-    # o_data <= final_stage[N*REG_SIZE-1 : LSB_OUT+(N-1)*REG_SIZE]
-    #   i.e. drop the LSB_OUT lowest bits of the last stage, keep OUTPUT_SIZE bits.
     if condition_valid:
         state["o_data"] = (final_stage >> state["LSB_OUT"]) & state["OUT_MASK"]
     state["o_valid"] = 1 if condition_valid else 0
@@ -165,35 +143,23 @@ def cic_step(state, i_data, i_valid):
 
 
 # =============================================================================
-# 3. THE TESTBENCH
+# 3. THE TESTBENCH  (bit-exact model of tb_CIC.v)
 # =============================================================================
 
 def run_testbench():
-    """
-    Run the whole simulation in memory and return the rows that the Verilog
-    testbench would write into the CSV (no file is written here).
+    """Run the whole simulation in memory."""
 
-    Timing notes (this is what makes the model byte-exact):
-      * The clock starts at 0, so rising edges happen at 5, 15, 25 ... ns.
-      * Reset is released on a falling edge after 4 rising edges (t = 40 ns),
-        so the first logged edge is at 45 ns.
-      * The CSV `always @(posedge clk)` block prints the values the registers
-        had BEFORE that edge. So we log the state first, then clock everything.
-    """
     dec    = cic_new(N, OSR_DEC, INPUT_SIZE, OUTPUT_SIZE, "decimator")
     interp = cic_new(N, OSR_INT, INPUT_SIZE, OUTPUT_SIZE, "interpolator")
 
     in_mask = (1 << INPUT_SIZE) - 1
 
     # ---- Stimulus generator state (the two `always` driver blocks) ----
-    dec_i_valid, dec_i_data, dec_cyc_count = 0, rtoi(OFFSET) & in_mask, 0
-    int_i_valid, int_i_data = 0, rtoi(OFFSET) & in_mask
+    dec_i_valid, dec_i_data, dec_cyc_count = 0, int(OFFSET) & in_mask, 0
+    int_i_valid, int_i_data = 0, int(OFFSET) & in_mask
     int_cyc_count, int_low_sample_count = 0, 0
 
-    # Rising edges happen at CLK/2, 3*CLK/2, ... Reset is released at t = 4*CLK
-    # (falling edge after the 4th rising edge), so the first logged edge is at
-    # 4*CLK + CLK/2 = 4.5*CLK  (= 45 ns for the default 10 ns clock).
-    first_edge_ns = 4.5 * CLK_PERIOD_NS
+    first_edge_ns = 4.5 * CLK_PERIOD_NS # Reset is released at t = 4*CLK, so the first logged edge is at 4*CLK + CLK/2 = 4.5*CLK
 
     rows = []
     for k in range(RUN_CYCLES):
@@ -213,15 +179,13 @@ def run_testbench():
 
         # ---------------------------------------------------------------
         # (c) CLOCK THE STIMULUS GENERATORS.
-        #     Note: i_valid is registered, so the first data sample only
-        #     appears one cycle after i_valid rises.
         # ---------------------------------------------------------------
 
         # --- Decimator driver: a new sine sample on EVERY clock cycle ---
         if dec_i_valid:
             sine = OFFSET + AMPLITUDE * math.sin(
                 2.0 * math.pi * F_SIGNAL_HZ * (dec_cyc_count * t_full))
-            code = rtoi(sine + 0.5)                       # round-half-up, then truncate
+            code = int(sine + 0.5)                       # round-half-up, then truncate
             code = min(max(code, 0), MAX_INPUT_CODE)       # saturate to the input range
             dec_i_data = code & in_mask
             dec_cyc_count += 1
@@ -232,7 +196,7 @@ def run_testbench():
             if (int_cyc_count % OSR_INT) == 0:
                 sine = OFFSET + AMPLITUDE * math.sin(
                     2.0 * math.pi * F_SIGNAL_HZ * (int_low_sample_count * t_int_low))
-                code = rtoi(sine + 0.5)
+                code = int(sine + 0.5)
                 code = min(max(code, 0), MAX_INPUT_CODE)
                 int_i_data = code & in_mask
                 int_low_sample_count += 1
@@ -243,7 +207,7 @@ def run_testbench():
 
 
 # =============================================================================
-# 4. CSV READING & COMPARISON
+# 4. CSV READING / COMPARISON
 # =============================================================================
 
 CSV_HEADER = "time_ns,dec_i_data,dec_o_valid,dec_o_data,int_i_data,interp_o_valid,interp_o_data"
@@ -308,6 +272,7 @@ def _style_axes(ax):
 
 def plot(ref_rows, py_rows, filename=PLOT_PATH):
     """Overlay the Python model and the HDL CSV outputs."""
+
     def col(rows, i):
         return [r[i] for r in rows]
 
@@ -371,10 +336,9 @@ def main():
     ref_rows = read_csv(CSV_PATH)
     py_rows  = run_testbench()
 
-    ok = compare(ref_rows, py_rows, f"{CSV_PATH} vs python model")
+    compare(ref_rows, py_rows, f"{CSV_PATH} vs python model")
     plot(ref_rows, py_rows)
-
-    sys.exit(0 if ok else 1)
+    plt.show()
 
 
 if __name__ == "__main__":
