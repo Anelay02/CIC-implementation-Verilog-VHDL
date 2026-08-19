@@ -1,4 +1,4 @@
-# CIC Filter — Configurable Decimator / Interpolator (Verilog + VHDL)
+# CIC Filter — Configurable Decimator / Interpolator
 
 A parametrable **CIC (Cascaded Integrator–Comb)** filter, provided in **two equivalent
 RTL implementations** (Verilog-2001 and VHDL-2008), with a parametrable testbench for
