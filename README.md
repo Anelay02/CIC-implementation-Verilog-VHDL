@@ -58,12 +58,6 @@ Repository layout:
     └── tb_CIC.vhd             # VHDL testbench
 ```
 
-| Item | Description |
-|---|---|
-| `rtl/CIC.v` `rtl/CIC.vhd` | Verilog & VHDL implementation |
-| `tb/tb_CIC.v` `tb/tb_CIC.vhd` | Parametrable testbenches |
-| `python/cic_model.py` | Bit-exact Python model of the RTL; reads the CSV produced by the simulator, re-runs the same scenario in Python, compares sample by sample and plots the result |
-
 Key characteristics of the design:
 
 - Order `N`, rate-change ratio `OSR` and data widths are all parameters.
