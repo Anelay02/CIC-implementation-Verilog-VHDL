@@ -266,3 +266,5 @@ pp. 155–162, 1981. [doi:10.1109/TASSP.1981.1163535](https://doi.org/10.1109/TA
 
 R. Lyons, *A Beginner's Guide To Cascaded Integrator-Comb (CIC) Filters*, dsprelated.com —
 <https://www.dsprelated.com/showarticle/1337.php>
+
+This project was developed with AI assistance.
