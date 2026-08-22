@@ -260,11 +260,11 @@ samples_per_period=31  run_cycles=8192
 
 ## References
 
-E. Hogenauer, *An economical class of digital filters for decimation and interpolation*,
+- E. Hogenauer, *An economical class of digital filters for decimation and interpolation*,
 IEEE Transactions on Acoustics, Speech, and Signal Processing, vol. 29, no. 2,
 pp. 155–162, 1981. [doi:10.1109/TASSP.1981.1163535](https://doi.org/10.1109/TASSP.1981.1163535)
 
-R. Lyons, *A Beginner's Guide To Cascaded Integrator-Comb (CIC) Filters*, dsprelated.com —
+- R. Lyons, *A Beginner's Guide To Cascaded Integrator-Comb (CIC) Filters*, dsprelated.com —
 <https://www.dsprelated.com/showarticle/1337.php>
 
 This project was developed with AI assistance.
